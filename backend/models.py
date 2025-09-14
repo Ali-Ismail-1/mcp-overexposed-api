@@ -1,0 +1,13 @@
+# backend/models.py
+from sqlalchemy import Column, Integer, String
+from .db import Base
+
+
+class User(Base):
+	__tablename__ = "users"
+
+	id = Column(Integer, primary_key=True, index=True)
+	name = Column(String, nullable=False)
+	email = Column(String, nullable=False, unique=True, index=True)
+	ssn = Column(String, nullable=False)
+	salary = Column(Integer, nullable=False)
