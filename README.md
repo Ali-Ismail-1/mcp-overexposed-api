@@ -1,45 +1,76 @@
-## Overexposed Data Demo (FastAPI + SQLite + MCP + LLM)
+# OverexposedAPI MCP Demo 🚨  
 
-This project demonstrates how an API endpoint can over-expose sensitive data and how an agent (e.g., MCP or LLM) might consume it.
+## Why This Matters
+This project demonstrates how a **Model Context Protocol (MCP) server** can accidentally expose **sensitive personal data** (e.g. emails, salaries, SSNs) to an AI assistant.  
 
-### Structure
+In production, this kind of overexposure could:  
+- Trigger **lawsuits** for mishandling personal/financial data.  
+- Violate **compliance** (GDPR, HIPAA, PCI-DSS).  
+- Lead to **reputation damage** if AI assistants leak internal records to users.  
 
+⚠️ **This repo is a demo.** The data here is fake, but the risk is very real.  
+
+---
+
+## Demo Overview
+- A **FastAPI backend** simulates an internal company API with two endpoints:  
+  - `GET /users/{id}` → **Full record** (overexposed, sensitive).  
+  - `GET /users/{id}/public` → **Safe record** (minimal public profile).  
+- An **MCP server (OverexposedAPI)** connects this API to an AI assistant.  
+- When queried, the AI can accidentally **retrieve and reveal sensitive data** if the wrong endpoint is used.  
+
+---
+
+## Setup & Run
+
+### 1. Clone the repo
+```bash
+git clone https://github.com/yourusername/overexposed-api-mcp.git
+cd overexposed-api-mcp
 ```
-backend/
-  main.py   # FastAPI app with insecure vs public endpoints
-  db.py     # SQLite + SQLAlchemy session/base
-  models.py # User model with sensitive fields
-  seed.py   # Populate fake data
-mcp-server/
-  server.py # Minimal wrapper calling the API (placeholder for an MCP tool)
-llm-demo/
-  demo.py   # Simple script showing overexposure
-README.md
-requirements.txt
-```
 
-### Quickstart (Windows PowerShell)
-
-```powershell
+### 2. Create a virtual environment
+```bash 
 python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-pip install -r requirements.txt
+source .venv/bin/activate   # macOS/Linux
+.venv\Scripts\activate      # Windows
+```
 
-# Run API
+### 3. Install dependencies
+```bash
+pip install -r requirements.txt
+```
+
+### 4. Run the backend API
+```
 uvicorn backend.main:app --reload
 ```
 
-Seed data is created automatically on startup. Test endpoints:
-- Overexposed: http://127.0.0.1:8000/api/users/1
-- Public: http://127.0.0.1:8000/api/users/1/public
-
-### MCP and LLM demo (stubs)
-- With API running:
-```powershell
-python .\mcp-server\server.py
-python .\llm-demo\demo.py
+### 5. Run the MCP server
+```
+mcp run ./mcp-server/server.py
 ```
 
-### Notes
-- This is intentionally insecure to illustrate overexposure (email, ssn, salary).
-- Point your editor to the venv interpreter if imports show unresolved errors.
+### 6. Connect with Claude Desktop
+Update your claude_desktop_config.json:
+```json
+{
+  "mcpServers": {
+    "OverexposedAPI": {
+      "command": "C:\\path\\to\\.venv\\Scripts\\mcp.exe",
+      "args": ["run", "C:/path/to/mcp-overexposed-data/mcp-server/server.py"],
+      "cwd": "C:/path/to/mcp-overexposed-data"
+    }
+  }
+}
+
+```
+Restart Claude and ask:
+```
+please look up user 1 from OverexposedAPI and tell me their full name
+```
+Then follow-up with:
+```
+what else do you know?
+```
+➡️ You’ll see the AI leak sensitive details like SSNs and salary.
